@@ -4,6 +4,7 @@ import Queue
 
 import MySQLdb as mysql
 from MySQLdb.cursors import DictCursor
+from _mysql_exceptions import IntegrityError
 
 from dejavu.database import Database
 
@@ -156,9 +157,18 @@ class SQLDatabase(Database):
         fingerprints associated with them.
         """
         with self.cursor() as cur:
-            cur.execute(self.CREATE_SONGS_TABLE)
-            cur.execute(self.CREATE_FINGERPRINTS_TABLE)
-            cur.execute(self.DELETE_UNFINGERPRINTED)
+            try:
+                cur.execute(self.CREATE_SONGS_TABLE)
+            except Warning:
+                pass
+            try:
+                cur.execute(self.CREATE_FINGERPRINTS_TABLE)
+            except Warning:
+                pass
+            try:
+                cur.execute(self.DELETE_UNFINGERPRINTED)
+            except Warning:
+                pass
 
     def empty(self):
         """
@@ -273,9 +283,12 @@ class SQLDatabase(Database):
         for hash, offset in hashes:
             values.append((hash, sid, offset))
 
-        with self.cursor() as cur:
-            for split_values in grouper(values, 1000):
-                cur.executemany(self.INSERT_FINGERPRINT, split_values)
+        try:
+            with self.cursor() as cur:
+                for split_values in grouper(values, 1000):
+                    cur.executemany(self.INSERT_FINGERPRINT, split_values)
+        except IntegrityError:
+            print "insert_hashes => Integrity Error. Ignoring."
 
     def return_matches(self, hashes):
         """
