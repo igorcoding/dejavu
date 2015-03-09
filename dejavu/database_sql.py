@@ -49,41 +49,42 @@ class SQLDatabase(Database):
 
     # tables
     FINGERPRINTS_TABLENAME = "fingerprints"
-    SONGS_TABLENAME = "songs"
+    SONGS_TABLENAME = "app_song"
+    SONGS_SONG_ID = "id"
 
     # fields
     FIELD_HASH = "hash"
     FIELD_SONG_ID = "song_id"
     FIELD_OFFSET = "offset"
-    FIELD_SONGNAME = "song_name"
+    FIELD_SONGNAME = "title"
     FIELD_FINGERPRINTED = "fingerprinted"
 
     # creates
     CREATE_FINGERPRINTS_TABLE = """
         CREATE TABLE IF NOT EXISTS `%s` (
              `%s` binary(10) not null,
-             `%s` mediumint unsigned not null,
+             `%s` int not null,
              `%s` int unsigned not null,
          INDEX (%s),
          UNIQUE KEY `unique_constraint` (%s, %s, %s),
-         FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE
+         FOREIGN KEY (%s) REFERENCES %s(%s)
     ) ENGINE=INNODB;""" % (
         FINGERPRINTS_TABLENAME, FIELD_HASH,
         FIELD_SONG_ID, FIELD_OFFSET, FIELD_HASH,
         FIELD_SONG_ID, FIELD_OFFSET, FIELD_HASH,
-        FIELD_SONG_ID, SONGS_TABLENAME, FIELD_SONG_ID
+        FIELD_SONG_ID, SONGS_TABLENAME, SONGS_SONG_ID
     )
 
     CREATE_SONGS_TABLE = """
         CREATE TABLE IF NOT EXISTS `%s` (
-            `%s` mediumint unsigned not null auto_increment,
+            `%s` int not null auto_increment,
             `%s` varchar(250) not null,
             `%s` tinyint default 0,
         PRIMARY KEY (`%s`),
         UNIQUE KEY `%s` (`%s`)
     ) ENGINE=INNODB;""" % (
-        SONGS_TABLENAME, FIELD_SONG_ID, FIELD_SONGNAME, FIELD_FINGERPRINTED,
-        FIELD_SONG_ID, FIELD_SONG_ID, FIELD_SONG_ID,
+        SONGS_TABLENAME, SONGS_SONG_ID, FIELD_SONGNAME, FIELD_FINGERPRINTED,
+        SONGS_SONG_ID, SONGS_SONG_ID, SONGS_SONG_ID,
     )
 
     # inserts (ignores duplicates)
@@ -111,19 +112,19 @@ class SQLDatabase(Database):
 
     SELECT_SONG = """
         SELECT %s FROM %s WHERE %s = %%s
-    """ % (FIELD_SONGNAME, SONGS_TABLENAME, FIELD_SONG_ID)
+    """ % (FIELD_SONGNAME, SONGS_TABLENAME, SONGS_SONG_ID)
 
     SELECT_NUM_FINGERPRINTS = """
         SELECT COUNT(*) as n FROM %s
-    """ % (FINGERPRINTS_TABLENAME)
+    """ % (FINGERPRINTS_TABLENAME,)
 
     SELECT_UNIQUE_SONG_IDS = """
         SELECT COUNT(DISTINCT %s) as n FROM %s WHERE %s = 1;
-    """ % (FIELD_SONG_ID, SONGS_TABLENAME, FIELD_FINGERPRINTED)
+    """ % (SONGS_SONG_ID, SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     SELECT_SONGS = """
         SELECT %s, %s FROM %s WHERE %s = 1;
-    """ % (FIELD_SONG_ID, FIELD_SONGNAME, SONGS_TABLENAME, FIELD_FINGERPRINTED)
+    """ % (SONGS_SONG_ID, FIELD_SONGNAME, SONGS_TABLENAME, FIELD_FINGERPRINTED)
 
     # drops
     DROP_FINGERPRINTS = "DROP TABLE IF EXISTS %s;" % FINGERPRINTS_TABLENAME
@@ -132,7 +133,7 @@ class SQLDatabase(Database):
     # update
     UPDATE_SONG_FINGERPRINTED = """
         UPDATE %s SET %s = 1 WHERE %s = %%s
-    """ % (SONGS_TABLENAME, FIELD_FINGERPRINTED, FIELD_SONG_ID)
+    """ % (SONGS_TABLENAME, FIELD_FINGERPRINTED, SONGS_SONG_ID)
 
     # delete
     DELETE_UNFINGERPRINTED = """
@@ -165,10 +166,10 @@ class SQLDatabase(Database):
                 cur.execute(self.CREATE_FINGERPRINTS_TABLE)
             except Warning:
                 pass
-            try:
-                cur.execute(self.DELETE_UNFINGERPRINTED)
-            except Warning:
-                pass
+            # try:
+            #     cur.execute(self.DELETE_UNFINGERPRINTED)
+            # except Warning:
+            #     pass
 
     def empty(self):
         """

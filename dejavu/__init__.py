@@ -9,8 +9,8 @@ import sys
 
 class Dejavu(object):
 
-    SONG_ID = "song_id"
-    SONG_NAME = 'song_name'
+    SONG_ID = 'id'
+    SONG_NAME = 'title'
     CONFIDENCE = 'confidence'
     MATCH_TIME = 'match_time'
     OFFSET = 'offset'
@@ -94,7 +94,7 @@ class Dejavu(object):
         pool.close()
         pool.join()
 
-    def fingerprint_file(self, filepath, song_name=None):
+    def fingerprint_file(self, filepath, song_name=None, id_in_filename=False):
         songname = decoder.path_to_songname(filepath)
         song_name = song_name or songname
         # don't refingerprint already fingerprinted files
@@ -105,7 +105,13 @@ class Dejavu(object):
                                                     self.limit,
                                                     song_name=song_name)
 
-            sid = self.db.insert_song(song_name)
+            if id_in_filename:
+                try:
+                    sid = int(os.path.basename(filepath).split('.')[0])
+                except ValueError:
+                    sid = self.db.insert_song(song_name)
+            else:
+                sid = self.db.insert_song(song_name)
 
             self.db.insert_hashes(sid, hashes)
             self.db.set_song_fingerprinted(sid)
